@@ -18,13 +18,22 @@ def es_pagina_valida(url):
     
     
 
+    if "google.com/finance" in url:
+        return False
+
+    if "google.com/maps" in url:
+        return False
+
+    if "google.com/travel" in url:
+        return False
+
     redes = [
         "instagram.com",
         "facebook.com",
         "tiktok.com",
         "youtube.com",
         "x.com",
-        "twitter.com"
+        "twitter.com",
     ]
 
     return any(red in url for red in redes)
@@ -33,14 +42,22 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
+<<<<<<< HEAD
 serie = "Bridgerton"
+=======
+serie = "La Reina del Flow"
+>>>>>>> bab05c60cfb1b32e95a15699bf1a441b7d81d452
 
 queries = [
     f'"{serie}" Netflix Uruguay site:instagram.com',
     f'"{serie}" Netflix Uruguay site:facebook.com',
     f'"{serie}" Netflix Uruguay site:tiktok.com',
     f'"{serie}" Netflix Uruguay site:youtube.com',
+<<<<<<< HEAD
     f'"{serie}" Netflix Uruguay site:x.com'
+=======
+    f'"{serie}" Netflix Uruguay site:x.com',
+>>>>>>> bab05c60cfb1b32e95a15699bf1a441b7d81d452
 ]
 
 max_paginas = 3
@@ -55,7 +72,9 @@ options.add_experimental_option("excludeSwitches", ["enable-automation"])
 options.add_experimental_option("useAutomationExtension", False)
 
 driver = webdriver.Chrome(options=options)
-driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+driver.execute_script(
+    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+)
 
 resultados = []
 
@@ -85,11 +104,7 @@ for query in queries:
             url = link.get_attribute("href")
 
             if es_pagina_valida(url):
-                resultados.append({
-                    "Serie": serie,
-                    "Busqueda": query,
-                    "URL": url
-                })
+                resultados.append({"Serie": serie, "Busqueda": query, "URL": url})
 
         print(f"Página {pagina + 1} completada")
 
