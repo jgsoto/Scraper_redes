@@ -33,11 +33,11 @@ def verificar_con_ia(texto, serie):
         NO_RELACIONADO
 
         Texto:
-        {texto[:4000]}
+        {texto[:1000]}  # Limitar a los primeros 1000 caracteres para eficiencia
         """
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": "Eres un analista de contenido digital especializado en series y entretenimiento."},
                 {"role": "user", "content": prompt}
@@ -59,7 +59,7 @@ def verificar_con_ia(texto, serie):
         print(f"Error IA: {e}")
         return "ERROR_IA"
 
-def verificar_contenido_bridgerton():
+def verificar_contenido():
     # 2. Cargar el Excel
     try:
         df = pd.read_excel('paginas_encontradas.xlsx')
@@ -88,15 +88,48 @@ def verificar_contenido_bridgerton():
             
             # 3. Extraer el texto visible de la publicación
             # Nota: Dependiendo de la red social, podrías necesitar un selector más específico
-            cuerpo_texto = driver.find_element(By.TAG_NAME, "body").text.lower()
-            
-            # 4. Verificación de palabras clave (Bridgerton y el tema específico)
-            cuerpo_texto = driver.find_element(By.TAG_NAME, "body").text
+            # Scroll para cargar contenido dinámico
+            for _ in range(2):
+                driver.execute_script("window.scrollBy(0, 1000);")
+                time.sleep(1.5)
 
-            if len(cuerpo_texto) < 10:
+            texto_total = ""
+
+            # 1️⃣ Meta description (muy confiable)
+            try:
+                meta = driver.find_element(By.XPATH, "//meta[@name='description']")
+                texto_total += meta.get_attribute("content") + " "
+            except:
+                pass
+
+            # 2️⃣ Título principal (YouTube / general)
+            try:
+                titulo = driver.find_element(By.TAG_NAME, "h1").text
+                texto_total += titulo + " "
+            except:
+                pass
+
+            # 3️⃣ Descripción YouTube específica
+            if "youtube.com" in url:
+                try:
+                    descripcion = driver.find_element(By.ID, "description").text
+                    texto_total += descripcion + " "
+                except:
+                    pass
+
+            # 4️⃣ Body como fallback final
+            try:
+                body = driver.find_element(By.TAG_NAME, "body").text
+                texto_total += body
+            except:
+                pass
+
+            texto_total = texto_total.strip()
+
+            if len(texto_total) < 150:
                 status = "Contenido insuficiente"
             else:
-                status = verificar_con_ia(cuerpo_texto, "Bridgerton")
+                status = verificar_con_ia(texto_total, "la reina del flow")
                      
             resultados.append(status)
             
@@ -114,4 +147,4 @@ def verificar_contenido_bridgerton():
     driver.quit()
 
 if __name__ == "__main__":
-    verificar_contenido_bridgerton()
+    verificar_contenido()

@@ -13,16 +13,7 @@ def es_pagina_valida(url):
     if not url:
         return False
 
-    if "google.com" in url:
-        return False
-
-    if "google.com/finance" in url:
-        return False
-
-    if "google.com/maps" in url:
-        return False
-
-    if "google.com/travel" in url:
+    if "google.com/" in url:
         return False
 
     redes = [
@@ -40,7 +31,7 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "Bridgerton"
+serie = "la reina del flow"
 
 queries = [
     f'"{serie}" Netflix Uruguay site:instagram.com',
