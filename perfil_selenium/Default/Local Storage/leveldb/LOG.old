@@ -1,0 +1,30 @@
+2026/03/03-12:44:01.314 d70 Reusing MANIFEST c:\Users\DeegonXD005\Documents\Pasantías\Golden\Scraper_redes\Scraper_redes\perfil_selenium\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/03-12:44:01.322 d70 Recovering log #3
+2026/03/03-12:44:01.326 d70 Reusing old log c:\Users\DeegonXD005\Documents\Pasantías\Golden\Scraper_redes\Scraper_redes\perfil_selenium\Default\Local Storage\leveldb/000003.log 
+2026/03/03-12:47:05.976 572c Level-0 table #5: started
+2026/03/03-12:47:05.997 572c Level-0 table #5: 23535 bytes OK
+2026/03/03-12:47:06.000 572c Delete type=0 #3
+2026/03/03-12:49:07.045 572c Level-0 table #7: started
+2026/03/03-12:49:07.060 572c Level-0 table #7: 28555 bytes OK
+2026/03/03-12:49:07.063 572c Delete type=0 #4
+2026/03/03-12:50:07.041 572c Level-0 table #9: started
+2026/03/03-12:50:07.049 572c Level-0 table #9: 24580 bytes OK
+2026/03/03-12:50:07.052 572c Delete type=0 #6
+2026/03/03-12:50:54.592 572c Level-0 table #11: started
+2026/03/03-12:50:54.602 572c Level-0 table #11: 24598 bytes OK
+2026/03/03-12:50:54.604 572c Delete type=0 #8
+2026/03/03-12:52:48.845 572c Level-0 table #13: started
+2026/03/03-12:52:48.853 572c Level-0 table #13: 77456 bytes OK
+2026/03/03-12:52:48.858 572c Delete type=0 #10
+2026/03/03-12:54:14.505 572c Level-0 table #15: started
+2026/03/03-12:54:14.520 572c Level-0 table #15: 106043 bytes OK
+2026/03/03-12:54:14.523 572c Delete type=0 #12
+2026/03/03-12:54:14.525 572c Compacting 4@0 + 1@1 files
+2026/03/03-12:54:14.539 572c Generated table #16@0: 155 keys, 199412 bytes
+2026/03/03-12:54:14.539 572c Compacted 4@0 + 1@1 files => 199412 bytes
+2026/03/03-12:54:14.541 572c compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/03-12:54:14.543 572c Delete type=2 #7
+2026/03/03-12:54:14.543 572c Delete type=2 #9
+2026/03/03-12:54:14.543 572c Delete type=2 #11
+2026/03/03-12:54:14.543 572c Delete type=2 #13
+2026/03/03-12:54:14.543 572c Delete type=2 #15

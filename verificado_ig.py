@@ -1,106 +1,83 @@
-import json
 import os
-import time
 import pandas as pd
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# --- 1. DEFINICIÓN DE LA CLASE (Debe ir arriba) ---
-class InstagramSession:
-    def __init__(self, driver, cookie_file="instagram_cookies.json"):
-        self.driver = driver
-        self.cookie_file = cookie_file
-
-    def save_cookies(self):
-        print("\n[!] ESPERA: Inicia sesión manualmente en la ventana del navegador.")
-        input("Una vez que veas tu feed de Instagram, presiona ENTER aquí para guardar la sesión...")
-        with open(self.cookie_file, "w") as file:
-            json.dump(self.driver.get_cookies(), file)
-        print("✅ Cookies guardadas correctamente.")
-
-    def load_cookies(self):
-        if os.path.exists(self.cookie_file):
-            # Instagram requiere estar en su dominio antes de inyectar cookies
-            self.driver.get("https://www.instagram.com/robots.txt") 
-            with open(self.cookie_file, "r") as file:
-                cookies = json.load(file)
-                for cookie in cookies:
-                    self.driver.add_cookie(cookie)
-            self.driver.refresh()
-            print("✅ Sesión cargada desde cookies.")
-            return True
-        return False
-
-# --- 2. FUNCIÓN DE PROCESAMIENTO ---
-def verificar_instagram_bridgerton():
-    try:
-        df = pd.read_excel('resultados_instagram.xlsx')
-    except Exception as e:
-        print(f"Error al leer el Excel: {e}")
-        return
-
-    df_ig = df[df['URL'].str.contains("instagram.com", na=False)].copy()
+def scrapper_multired_pro():
+    # 1. Configuración de Carpeta de Perfil (ESTO ES LA CLAVE)
+    # Crea una carpeta llamada 'perfil_selenium' en tu proyecto
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    user_data_dir = os.path.join(script_dir, "perfil_selenium")
+    
+    if not os.path.exists(user_data_dir):
+        os.makedirs(user_data_dir)
 
     options = Options()
-    # Desactivar notificaciones de navegador que pueden bloquear elementos
+    options.add_argument(f"--user-data-dir={user_data_dir}") # Guarda cookies, caché y sesiones
+    options.add_argument("--profile-directory=Default")
     options.add_argument("--disable-notifications")
+    options.add_argument("--start-maximized")
+    
     driver = webdriver.Chrome(options=options)
     
-    session = InstagramSession(driver)
-    driver.get("https://www.instagram.com")
-    
-    if not session.load_cookies():
-        session.save_cookies()
+    try:
+        df = pd.read_excel('paginas_encontradas_Agata.xlsx')
+        # Limpiar links: quedarnos solo con redes sociales soportadas
+        redes_validas = ["instagram.com", "facebook.com", "x.com", "youtube.com", "tiktok.com"]
+        df_filtrado = df[df['URL'].str.contains('|'.join(redes_validas), na=False)].copy()
+    except Exception as e:
+        print(f"Error con el Excel: {e}")
+        return
 
     resultados = []
 
-    for index, row in df_ig.iterrows():
+    # 2. PRIMER PASO: Verificación de Login General
+    # Solo lo haremos una vez al principio del script
+    print("\n[!] Revisando sesiones activas...")
+    for red in ["https://www.instagram.com", "https://www.facebook.com"]:
+        driver.get(red)
+        time.sleep(3)
+        # Si ves que te pide login, el script se detendrá aquí para que lo hagas
+        if "login" in driver.current_url.lower() or "signup" in driver.current_url.lower():
+            print(f"⚠️ No hay sesión en {red}. Por favor, loguéate manualmente.")
+            input("Cuando estés dentro de la cuenta y veas el muro, presiona ENTER aquí...")
+
+    # 3. PROCESAMIENTO DE LINKS
+    for index, row in df_filtrado.iterrows():
         url = row['URL']
-        print(f"Analizando: {url}")
+        print(f"🚀 Analizando: {url}")
         
         try:
             driver.get(url)
             
-            # 1. Espera flexible: Esperamos a que aparezca CUALQUIER texto 
-            # o que el cuerpo de la página esté listo (máximo 12 segundos)
-            WebDriverWait(driver, 12).until(
-                lambda d: d.find_element(By.TAG_NAME, "body").text != ""
+            # Espera a que el contenido principal cargue
+            # En Instagram los posts están dentro de etiquetas <article> o <main>
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
-            
-            # Pequeña pausa extra para que el JS renderice el contenido del post
-            time.sleep(3)
-            
-            # 2. Captura de texto multicanal
-            # Intentamos sacar el texto del 'main' que es donde está el contenido real
-            try:
-                contenedor_principal = driver.find_element(By.TAG_NAME, "main")
-                texto_pagina = contenedor_principal.text
-            except:
-                # Si falla el 'main', vamos al body completo
-                texto_pagina = driver.find_element(By.TAG_NAME, "body").text
-            
-            # 3. Verificación mejorada (Case Insensitive)
-            if "bridgerton" in texto_pagina.lower():
-                resultados.append("Contiene 'Bridgerton'")
-            else:
-                resultados.append("No menciona la serie")
-                
-        except Exception as e:
-            # Capturamos el error real para depurar
-            error_msg = str(e).split('\n')[0] # Solo la primera línea del error
-            resultados.append(f"Error: {error_msg}")
-            print(f"Fallo en {url}: {error_msg}")
-        
-        time.sleep(1) # Respiro entre links
+            time.sleep(4) # Tiempo para que el texto dinámico aparezca
 
-    df_ig['Verificacion'] = resultados
-    df_ig.to_excel('resultados_instagram_final.xlsx', index=False)
-    print("\n🚀 Proceso finalizado con éxito.")
+            # Extraer el texto
+            texto_completo = driver.find_element(By.TAG_NAME, "body").text
+            
+            if "Agatha Christie: Las Siete Esferas" in texto_completo.lower():
+                resultados.append("SÍ: Contiene Agata")
+            else:
+                resultados.append("NO: No encontrado")
+
+        except Exception as e:
+            resultados.append(f"Error de carga: {type(e).__name__}")
+            print(f"❌ Falló {url}")
+
+    # 4. GUARDADO FINAL (Sobrescribiendo)
+    df_filtrado['Verificacion'] = resultados
+    df_filtrado.to_excel('verificacion_final_Agata.xlsx', index=False)
+    print("\n✅ Proceso completado. Archivo 'verificacion_final.xlsx' generado.")
     driver.quit()
 
-# --- 3. EJECUCIÓN ---
 if __name__ == "__main__":
-    verificar_instagram_bridgerton()
+    scrapper_multired_pro()

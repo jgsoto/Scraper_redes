@@ -16,15 +16,6 @@ def es_pagina_valida(url):
     if "google.com" in url:
         return False
 
-    if "google.com/finance" in url:
-        return False
-
-    if "google.com/maps" in url:
-        return False
-
-    if "google.com/travel" in url:
-        return False
-
     redes = [
         "instagram.com",
         "facebook.com",
@@ -40,7 +31,7 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "Bridgerton"
+serie = "Agatha Christie: Las Siete Esferas"
 
 queries = [
     f'"{serie}" Netflix Uruguay site:instagram.com',
@@ -109,6 +100,6 @@ driver.quit()
 df = pd.DataFrame(resultados)
 df = df.drop_duplicates()
 
-df.to_excel("paginas_encontradas.xlsx", index=False)
+df.to_excel("paginas_encontradas_Agata.xlsx", index=False)
 
 print("Búsqueda completada ✅")

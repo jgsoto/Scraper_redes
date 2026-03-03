@@ -201,7 +201,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-.xlsx
+*.xlsx
+*.json
 
 # Marimo
 marimo/_static/
