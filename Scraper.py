@@ -13,8 +13,10 @@ def es_pagina_valida(url):
     if not url:
         return False
 
-    if "google.com/search" in url:
+    if "google.com" in url:
         return False
+    
+    
 
     redes = [
         "instagram.com",
@@ -31,14 +33,14 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "El Botín"
+serie = "Bridgerton"
 
 queries = [
-    f'"{serie}" Uruguay site:instagram.com',
-    f'"{serie}" Uruguay site:facebook.com',
-    f'"{serie}" Uruguay site:tiktok.com',
-    f'"{serie}" Uruguay site:youtube.com',
-    f'"{serie}" Uruguay site:x.com'
+    f'"{serie}" Netflix Uruguay site:instagram.com',
+    f'"{serie}" Netflix Uruguay site:facebook.com',
+    f'"{serie}" Netflix Uruguay site:tiktok.com',
+    f'"{serie}" Netflix Uruguay site:youtube.com',
+    f'"{serie}" Netflix Uruguay site:x.com'
 ]
 
 max_paginas = 3
