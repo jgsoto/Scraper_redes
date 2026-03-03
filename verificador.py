@@ -129,7 +129,7 @@ def verificar_contenido():
             if len(texto_total) < 150:
                 status = "Contenido insuficiente"
             else:
-                status = verificar_con_ia(texto_total, "la reina del flow")
+                status = verificar_con_ia(texto_total, "agatha christie: las siete esferas")
                      
             resultados.append(status)
             

@@ -31,7 +31,7 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "la reina del flow"
+serie = "agatha christie: las siete esferas"
 
 queries = [
     f'"{serie}" Netflix Uruguay site:instagram.com',
