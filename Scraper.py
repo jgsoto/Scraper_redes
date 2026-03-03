@@ -15,8 +15,6 @@ def es_pagina_valida(url):
 
     if "google.com" in url:
         return False
-    
-    
 
     if "google.com/finance" in url:
         return False
@@ -42,22 +40,14 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-<<<<<<< HEAD
 serie = "Bridgerton"
-=======
-serie = "La Reina del Flow"
->>>>>>> bab05c60cfb1b32e95a15699bf1a441b7d81d452
 
 queries = [
     f'"{serie}" Netflix Uruguay site:instagram.com',
     f'"{serie}" Netflix Uruguay site:facebook.com',
     f'"{serie}" Netflix Uruguay site:tiktok.com',
     f'"{serie}" Netflix Uruguay site:youtube.com',
-<<<<<<< HEAD
-    f'"{serie}" Netflix Uruguay site:x.com'
-=======
     f'"{serie}" Netflix Uruguay site:x.com',
->>>>>>> bab05c60cfb1b32e95a15699bf1a441b7d81d452
 ]
 
 max_paginas = 3

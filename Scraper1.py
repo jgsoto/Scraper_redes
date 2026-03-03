@@ -6,58 +6,65 @@ import random
 from urllib.parse import quote_plus
 
 # ----------------------
-# FUNCIÓN FILTRO MEJORADA
+# FUNCIÓN FILTRO
 # ----------------------
 
-def es_pagina_valida(url, titulo_serie):
+def es_pagina_valida(url):
     if not url:
         return False
 
-    # Evitar enlaces internos de Google
-    if any(x in url for x in ["google.com", "google.com.ec", "support.google", "accounts.google"]):
+    if "google.com" in url:
         return False
 
-    # Redes sociales y plataformas de streaming
-    sitios_relevantes = [
-        "instagram.com", "facebook.com", "tiktok.com", 
-        "youtube.com", "x.com", "twitter.com", "netflix.com"
+    if "google.com/finance" in url:
+        return False
+
+    if "google.com/maps" in url:
+        return False
+
+    if "google.com/travel" in url:
+        return False
+
+    redes = [
+        "instagram.com",
+        "facebook.com",
+        "tiktok.com",
+        "youtube.com",
+        "x.com",
+        "twitter.com",
     ]
 
-    # El enlace debe ser de un sitio relevante
-    es_sitio_objetivo = any(sitio in url.lower() for sitio in sitios_relevantes)
-    
-    return es_sitio_objetivo
+    return any(red in url for red in redes)
 
 # ----------------------
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "El Botín"
-plataforma = "Netflix"
+serie = "Bridgerton"
 
-# Añadimos Netflix a las consultas para forzar resultados de la plataforma
 queries = [
-    f'"{serie}" {plataforma} Uruguay site:instagram.com',
-    f'"{serie}" {plataforma} Uruguay site:facebook.com',
-    f'"{serie}" {plataforma} Uruguay site:tiktok.com',
-    f'"{serie}" {plataforma} Uruguay site:netflix.com', # Nueva búsqueda específica
-    f'"{serie}" {plataforma} Uruguay site:x.com'
+    f'"{serie}" Netflix Uruguay site:instagram.com',
+    f'"{serie}" Netflix Uruguay site:facebook.com',
+    f'"{serie}" Netflix Uruguay site:tiktok.com',
+    f'"{serie}" Netflix Uruguay site:youtube.com',
+    f'"{serie}" Netflix Uruguay site:x.com',
 ]
 
-max_paginas = 2
+max_paginas = 3
 
 # ----------------------
-# DRIVER CON MODO INCÓGNITO
+# DRIVER
 # ----------------------
 
 options = webdriver.ChromeOptions()
-options.add_argument("--incognito") # <--- ACTIVAR MODO INCÓGNITO
 options.add_argument("--disable-blink-features=AutomationControlled")
 options.add_experimental_option("excludeSwitches", ["enable-automation"])
 options.add_experimental_option("useAutomationExtension", False)
 
 driver = webdriver.Chrome(options=options)
-driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+driver.execute_script(
+    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+)
 
 resultados = []
 
@@ -66,32 +73,32 @@ resultados = []
 # ----------------------
 
 for query in queries:
+
     print(f"Buscando: {query}")
+
     query_encoded = quote_plus(query)
 
     for pagina in range(max_paginas):
+
         start = pagina * 10
+
         url_busqueda = f"https://www.google.com/search?q={query_encoded}&start={start}"
-        
+
         driver.get(url_busqueda)
-        time.sleep(random.uniform(5, 8)) # Pausas un poco más largas para mayor seguridad
 
-        # Capturamos los contenedores de resultados para ser más precisos
-        enlaces = driver.find_elements(By.CSS_SELECTOR, "div.g a") 
+        time.sleep(random.uniform(4, 7))
 
-        for link in enlaces:
+        links = driver.find_elements(By.XPATH, "//a")
+
+        for link in links:
             url = link.get_attribute("href")
-            
-            if es_pagina_valida(url, serie):
-                resultados.append({
-                    "Serie": serie,
-                    "Plataforma": plataforma,
-                    "Busqueda": query,
-                    "URL": url
-                })
+
+            if es_pagina_valida(url):
+                resultados.append({"Serie": serie, "Busqueda": query, "URL": url})
 
         print(f"Página {pagina + 1} completada")
-        time.sleep(random.uniform(3, 5))
+
+        time.sleep(random.uniform(3, 6))
 
 driver.quit()
 
@@ -100,7 +107,8 @@ driver.quit()
 # ----------------------
 
 df = pd.DataFrame(resultados)
-df = df.drop_duplicates(subset=["URL"]) # Evitar URLs repetidas
+df = df.drop_duplicates()
 
-df.to_excel("resultados_netflix_uruguay.xlsx", index=False)
-print(f"Proceso finalizado. Se encontraron {len(df)} enlaces únicos. ✅")
+df.to_excel("paginas_encontradas.xlsx", index=False)
+
+print("Búsqueda completada ✅")
