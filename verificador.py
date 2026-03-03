@@ -1,3 +1,4 @@
+from openai import OpenAI
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -6,10 +7,57 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 # 1. Configuración de Selenium (Modo headless para mayor velocidad)
 chrome_options = Options()
 # chrome_options.add_argument("--headless") # Descomenta para no ver la ventana
+
+GROQ_API_KEY = os.environ.get("GROQCLOUD_API_KEY")
+
+client = OpenAI(
+    api_key=GROQ_API_KEY,
+    base_url="https://api.groq.com/openai/v1",
+)
+
+def verificar_con_ia(texto, serie):
+    try:
+        prompt = f"""
+        Analiza el siguiente texto y determina si realmente habla sobre la serie "{serie}".
+
+        Responde SOLO con una de estas tres opciones exactas:
+        RELACIONADO
+        PARCIAL
+        NO_RELACIONADO
+
+        Texto:
+        {texto[:4000]}
+        """
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Eres un analista de contenido digital especializado en series y entretenimiento."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2  # baja creatividad, más precisión
+        )
+
+        resultado = response.choices[0].message.content.strip().upper()
+
+        # limpieza defensiva
+        if "RELACIONADO" in resultado and "NO" not in resultado:
+            return "RELACIONADO"
+        elif "PARCIAL" in resultado:
+            return "PARCIAL"
+        else:
+            return "NO_RELACIONADO"
+
+    except Exception as e:
+        print(f"Error IA: {e}")
+        return "ERROR_IA"
 
 def verificar_contenido_bridgerton():
     # 2. Cargar el Excel
@@ -43,17 +91,13 @@ def verificar_contenido_bridgerton():
             cuerpo_texto = driver.find_element(By.TAG_NAME, "body").text.lower()
             
             # 4. Verificación de palabras clave (Bridgerton y el tema específico)
-            keywords = ["bridgerton", "netflix", "lady whistledown", "regency"]
-            menciona_serie = any(kw in cuerpo_texto for kw in keywords)
-            menciona_busqueda = tema_busqueda in cuerpo_texto
-            
-            if menciona_serie and menciona_busqueda:
-                status = "Relacionado"
-            elif menciona_serie:
-                status = "Habla de la serie, pero no del tema específico"
+            cuerpo_texto = driver.find_element(By.TAG_NAME, "body").text
+
+            if len(cuerpo_texto) < 10:
+                status = "Contenido insuficiente"
             else:
-                status = "No relacionado"
-                
+                status = verificar_con_ia(cuerpo_texto, "Bridgerton")
+                     
             resultados.append(status)
             
         except Exception as e:
