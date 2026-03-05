@@ -31,14 +31,14 @@ def es_pagina_valida(url):
 # CONFIGURACIÓN
 # ----------------------
 
-serie = "agatha christie: las siete esferas"
+serie = "Wake up dead man: Un misterio de Knives Out"
 
 queries = [
-    f'"{serie}" Netflix Uruguay site:instagram.com',
-    f'"{serie}" Netflix Uruguay site:facebook.com',
-    f'"{serie}" Netflix Uruguay site:tiktok.com',
-    f'"{serie}" Netflix Uruguay site:youtube.com',
-    f'"{serie}" Netflix Uruguay site:x.com',
+    f'"{serie}" Netflix Argentina site:instagram.com',
+    f'"{serie}" Netflix Argentina site:facebook.com',
+    f'"{serie}" Netflix Argentina site:tiktok.com',
+    f'"{serie}" Netflix Argentina site:youtube.com',
+    f'"{serie}" Netflix Argentina site:x.com',
 ]
 
 max_paginas = 3

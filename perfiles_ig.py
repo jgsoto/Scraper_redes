@@ -64,7 +64,7 @@ async def procesar_excel(entrada, salida):
     perfiles = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         for url in df["URL"]:
@@ -91,9 +91,9 @@ async def procesar_excel(entrada, salida):
 
         await browser.close()
 
-    df["Perfil_Formateado"] = perfiles
-    df = df[df["Perfil_Formateado"].notnull()]
-    df = df.drop_duplicates(subset=["Perfil_Formateado"])
+    df["URL"] = perfiles
+    df = df[df["URL"].notnull()]
+    df = df.drop_duplicates(subset=["URL"])
     df.to_excel(salida, index=False)
 
     print("Proceso terminado ✅")
