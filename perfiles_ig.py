@@ -1,106 +1,132 @@
-import asyncio
-import re
-import pandas as pd
-from playwright.async_api import async_playwright
 from urllib.parse import urlparse
+import re
+from playwright.async_api import async_playwright
 
-def limpiar_url_generica(url):
-    parsed = urlparse(url)
-    dominio = parsed.netloc.lower()
-    path = parsed.path.strip("/")
-    partes = path.split("/")
+class ProfileCleaner:
 
-    if not partes:
+    def limpiar_url_generica(self, url):
+        if not url or not isinstance(url, str):
+            return None
+            
+        parsed = urlparse(url)
+        dominio = parsed.netloc.lower()
+        path = parsed.path.strip("/")
+        partes = path.split("/")
+
+        if not partes or partes[0] == "":
+            return None
+
+        if "facebook.com" in dominio:
+            if partes[0] not in ["posts", "videos", "photo.php", "groups"]:
+                return f"https://www.facebook.com/{partes[0]}/"
+
+        if "x.com" in dominio or "twitter.com" in dominio:
+            usuario = partes[0]
+            if usuario not in ["home", "explore", "notifications", "i", "search", "intent", "share"]:
+                return f"https://x.com/{usuario}"
+
+        if "tiktok.com" in dominio:
+            if partes[0].startswith("@"):
+                return f"https://www.tiktok.com/{partes[0]}"
+
         return None
 
-    # FACEBOOK
-    if "facebook.com" in dominio:
-        if partes[0] not in ["posts", "videos", "photo.php", "groups"]:
-            return f"https://www.facebook.com/{partes[0]}/"
+    # -------------------------
+    # INSTAGRAM MEJORADO
+    # -------------------------
+    async def obtener_perfil_instagram(self, page):
+        try:
+            await page.wait_for_timeout(3000)
+            
+            # Intento 1: Buscar el enlace al perfil en la interfaz (más seguro)
+            enlace_perfil = await page.query_selector("header a[href^='/']")
+            if enlace_perfil:
+                href = await enlace_perfil.get_attribute("href")
+                usuario = href.replace("/", "").split("?")[0]
+                return f"https://www.instagram.com/{usuario}/"
 
-    # X / TWITTER
-    if "x.com" in dominio or "twitter.com" in dominio:
-        usuario = partes[0]
+            # Intento 2: Limpieza profunda del og:title
+            meta = await page.query_selector("meta[property='og:title']")
+            if meta:
+                content = await meta.get_attribute("content")
+                # El formato suele ser "Nombre (@usuario) • Fotos y videos..."
+                if "@" in content:
+                    usuario = content.split("@")[-1].split(")")[0]
+                    # Limpiar por si queda basura
+                    usuario = usuario.strip().split(" ")[0]
+                    return f"https://www.instagram.com/{usuario}/"
+            
+            return None
+        except:
+            return None
 
-        # Ignorar rutas internas
-        if usuario not in [
-            "home",
-            "explore",
-            "notifications",
-            "i",
-            "search",
-            "intent",
-            "share"
-        ]:
-            return f"https://x.com/{usuario}"
+    # -------------------------
+    # YOUTUBE MEJORADO
+    # -------------------------
+    async def obtener_canal_youtube(self, page):
+        try:
+            await page.wait_for_timeout(3000)
+            
+            # Buscar el link del canal en los metadatos de YouTube
+            meta_url = await page.query_selector("link[itemprop='url']")
+            if meta_url:
+                href = await meta_url.get_attribute("href")
+                if href:
+                    if href.startswith("/"):
+                        return f"https://www.youtube.com{href}"
+                    return href
 
-    # TIKTOK
-    if "tiktok.com" in dominio:
-        if partes[0].startswith("@"):
-            return f"https://www.tiktok.com/{partes[0]}"
-    
-    return None
+            # Alternativa: Buscar el link del autor debajo del video
+            canal_link = await page.query_selector("#upload-info a[href*='/@'], #upload-info a[href*='/channel/']")
+            if canal_link:
+                href = await canal_link.get_attribute("href")
+                if href.startswith("/"):
+                    return f"https://www.youtube.com{href}"
+                return href
 
-async def obtener_html(page, url):
-    await page.goto(url, timeout=30000)
-    await page.wait_for_load_state("networkidle")
-    return await page.content()
+        except:
+            return None
+        return None
 
-def extraer_usuario_instagram(html):
-    match = re.search(r'"username":"(.*?)"', html)
-    if match:
-        return f"https://www.instagram.com/{match.group(1)}/"
-    return None
+    # -------------------------
+    # EJECUCIÓN
+    # -------------------------
+    async def ejecutar(self, df):
+        df = df.copy()
+        perfiles = []
 
-def extraer_canal_youtube(html):
-    match = re.search(r'"ownerProfileUrl":"(.*?)"', html)
-    if match:
-        canal = match.group(1).replace("\\/", "/")
-        return f"{canal}"
-    return None
+        async with async_playwright() as p:
+            # Usar un User-Agent normal para evitar bloqueos y obtener metas correctos
+            browser = await p.chromium.launch(headless=False)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+            )
+            page = await context.new_page()
 
-async def procesar_excel(entrada, salida):
-    df = pd.read_excel(entrada)
-    perfiles = []
+            for url in df["URL"]:
+                # 1. Intentar limpiar si ya es una URL de perfil
+                perfil = self.limpiar_url_generica(url)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+                # 2. Si es un post/video, navegar para encontrar al autor
+                if perfil is None:
+                    try:
+                        await page.goto(url, timeout=45000, wait_until="domcontentloaded")
 
-        for url in df["URL"]:
-            print("Procesando:", url)
-            perfil = None
+                        if "instagram.com" in url:
+                            perfil = await self.obtener_perfil_instagram(page)
+                        elif "youtube.com/watch" in url:
+                            perfil = await self.obtener_canal_youtube(page)
+                    except Exception as e:
+                        print(f"Error procesando {url}: {e}")
+                        perfil = None
 
-            try:
-                html = await obtener_html(page, url)
-                
-                                         
-                if "instagram.com/p/" in url:
-                    perfil = extraer_usuario_instagram(html)
-                
-                elif "youtube.com/watch" in url:
-                    perfil = extraer_canal_youtube(html)
+                perfiles.append(perfil)
 
-                else:
-                    perfil = limpiar_url_generica(url)
+            await browser.close()
 
-            except Exception as e:
-                print("Error:", e)
+        df["URL_Limpia"] = perfiles
+        # Limpiar filas donde no se encontró nada y quitar duplicados
+        #df = df.dropna(subset=["URL_Limpia"])
+        df = df.drop_duplicates(subset=["URL_Limpia"])
 
-            perfiles.append(perfil)
-
-        await browser.close()
-
-    df["URL"] = perfiles
-    df = df[df["URL"].notnull()]
-    df = df.drop_duplicates(subset=["URL"])
-    df.to_excel(salida, index=False)
-
-    print("Proceso terminado ✅")
-
-
-if __name__ == "__main__":
-    entrada = input("Excel entrada: ")
-    salida = input("Excel salida: ")
-
-    asyncio.run(procesar_excel(entrada, salida))
+        return df

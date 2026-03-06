@@ -5,101 +5,84 @@ import pandas as pd
 import random
 from urllib.parse import quote_plus
 
-# ----------------------
-# FUNCIÓN FILTRO
-# ----------------------
+class GoogleScraper:
 
-def es_pagina_valida(url):
-    if not url:
-        return False
+    def __init__(self, serie, max_paginas=3):
+        self.serie = serie
+        self.max_paginas = max_paginas
+        self.driver = self._configurar_driver()
+        self.resultados = []
 
-    if "google.com/" in url:
-        return False
+    def _configurar_driver(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
 
-    redes = [
-        "instagram.com",
-        "facebook.com",
-        "tiktok.com",
-        "youtube.com",
-        "x.com",
-        "twitter.com",
-    ]
+        driver = webdriver.Chrome(options=options)
+        driver.execute_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        )
+        return driver
 
-    return any(red in url for red in redes)
+    def es_pagina_valida(self, url):
+        if not url:
+            return False
 
-# ----------------------
-# CONFIGURACIÓN
-# ----------------------
+        if "google.com/" in url:
+            return False
 
-serie = "Wake up dead man: Un misterio de Knives Out"
+        redes = [
+            "instagram.com",
+            "facebook.com",
+            "tiktok.com",
+            "youtube.com",
+            "x.com",
+            "twitter.com",
+        ]
 
-queries = [
-    f'"{serie}" Netflix Argentina site:instagram.com',
-    f'"{serie}" Netflix Argentina site:facebook.com',
-    f'"{serie}" Netflix Argentina site:tiktok.com',
-    f'"{serie}" Netflix Argentina site:youtube.com',
-    f'"{serie}" Netflix Argentina site:x.com',
-]
+        return any(red in url for red in redes)
 
-max_paginas = 3
+    def ejecutar(self):
 
-# ----------------------
-# DRIVER
-# ----------------------
+        queries = [
+            f'"{self.serie}" Netflix Argentina site:instagram.com',
+            f'"{self.serie}" Netflix Argentina site:facebook.com',
+            f'"{self.serie}" Netflix Argentina site:tiktok.com',
+            f'"{self.serie}" Netflix Argentina site:youtube.com',
+            f'"{self.serie}" Netflix Argentina site:x.com',
+        ]
 
-options = webdriver.ChromeOptions()
-options.add_argument("--disable-blink-features=AutomationControlled")
-options.add_experimental_option("excludeSwitches", ["enable-automation"])
-options.add_experimental_option("useAutomationExtension", False)
+        try:
+            for query in queries:
+                print(f"\n🔎 Buscando: {query}")
+                query_encoded = quote_plus(query)
 
-driver = webdriver.Chrome(options=options)
-driver.execute_script(
-    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-)
+                for pagina in range(self.max_paginas):
 
-resultados = []
+                    start = pagina * 10
+                    url_busqueda = f"https://www.google.com/search?q={query_encoded}&start={start}"
 
-# ----------------------
-# BÚSQUEDA
-# ----------------------
+                    self.driver.get(url_busqueda)
+                    time.sleep(random.uniform(4, 7))
 
-for query in queries:
+                    links = self.driver.find_elements(By.XPATH, "//a")
 
-    print(f"Buscando: {query}")
+                    for link in links:
+                        url = link.get_attribute("href")
 
-    query_encoded = quote_plus(query)
+                        if self.es_pagina_valida(url):
+                            self.resultados.append({
+                                "Serie": self.serie,
+                                "Busqueda": query,
+                                "URL": url
+                            })
 
-    for pagina in range(max_paginas):
+                    print(f"   ✅ Página {pagina + 1}")
 
-        start = pagina * 10
+                    time.sleep(random.uniform(3, 6))
 
-        url_busqueda = f"https://www.google.com/search?q={query_encoded}&start={start}"
+        finally:
+            self.driver.quit()
 
-        driver.get(url_busqueda)
-
-        time.sleep(random.uniform(4, 7))
-
-        links = driver.find_elements(By.XPATH, "//a")
-
-        for link in links:
-            url = link.get_attribute("href")
-
-            if es_pagina_valida(url):
-                resultados.append({"Serie": serie, "Busqueda": query, "URL": url})
-
-        print(f"Página {pagina + 1} completada")
-
-        time.sleep(random.uniform(3, 6))
-
-driver.quit()
-
-# ----------------------
-# GUARDAR RESULTADOS
-# ----------------------
-
-df = pd.DataFrame(resultados)
-df = df.drop_duplicates()
-
-df.to_excel("paginas_encontradas.xlsx", index=False)
-
-print("Búsqueda completada ✅")
+        return pd.DataFrame(self.resultados).drop_duplicates()
