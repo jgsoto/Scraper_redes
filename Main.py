@@ -8,7 +8,7 @@ class Main:
     @staticmethod
     def run():
 
-        serie = "la reina del flow"
+        serie = "Sandokan"
 
         print("\n🎬 INICIANDO PIPELINE COMPLETO\n")
 

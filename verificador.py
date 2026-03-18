@@ -69,7 +69,7 @@ class IAVerificador:
         for _, row in df.iterrows():
 
             url = row["URL"]
-            print(f"🤖 Analizando: {url}")
+            print(f"Analizando: {url}")
 
             try:
                 self.driver.get(url)

@@ -46,11 +46,11 @@ class GoogleScraper:
     def ejecutar(self):
 
         queries = [
-            f'"{self.serie}" Netflix Argentina site:instagram.com',
-            f'"{self.serie}" Netflix Argentina site:facebook.com',
-            f'"{self.serie}" Netflix Argentina site:tiktok.com',
-            f'"{self.serie}" Netflix Argentina site:youtube.com',
-            f'"{self.serie}" Netflix Argentina site:x.com',
+            f'{self.serie} Netflix Argentina site:instagram.com',
+            f'{self.serie} Netflix Argentina site:facebook.com',
+            f'{self.serie} Netflix Argentina site:tiktok.com',
+            f'{self.serie} Netflix Argentina site:youtube.com',
+            f'{self.serie} Netflix Argentina site:x.com',
         ]
 
         try:
