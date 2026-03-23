@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 
 class GoogleScraper:
 
-    def __init__(self, serie, max_paginas=3):
+    def __init__(self, serie, max_paginas=5):
         self.serie = serie
         self.max_paginas = max_paginas
         self.driver = self._configurar_driver()
@@ -29,30 +29,32 @@ class GoogleScraper:
         if not url:
             return False
 
-        if "google.com/" in url:
+        if "google.com" in url:
             return False
 
-        redes = [
-            "instagram.com",
-            "facebook.com",
-            "tiktok.com",
-            "youtube.com",
-            "x.com",
-            "twitter.com",
+        basura = [
+            "accounts.google.com",
+            "support.google.com",
+            "policies.google.com",
+            "maps.google.com",
         ]
 
-        return any(red in url for red in redes)
+        if any(b in url for b in basura):
+            return False
 
+        return True
+    
     def ejecutar(self):
 
         queries = [
-            f'{self.serie} Netflix Argentina site:instagram.com',
-            f'{self.serie} Netflix Argentina site:facebook.com',
-            f'{self.serie} Netflix Argentina site:tiktok.com',
-            f'{self.serie} Netflix Argentina site:youtube.com',
-            f'{self.serie} Netflix Argentina site:x.com',
-        ]
-
+                "medios Baja California noticias",
+                "periodico Baja California Mexico",
+                "noticias Baja California medios",
+                "site:facebook.com noticias Baja California",
+                "site:instagram.com Baja California noticias",
+                "site:youtube.com noticias Baja California",
+            ]
+        
         try:
             for query in queries:
                 print(f"\n🔎 Buscando: {query}")

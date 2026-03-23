@@ -2,64 +2,97 @@ import asyncio
 from Scraper import GoogleScraper
 from verificador import IAVerificador
 from perfiles_ig import ProfileCleaner
+from utils import cargar_urls_procesadas, guardar_urls_procesadas
+import os
+import pandas as pd
 
 class Main:
 
     @staticmethod
     def run():
 
-        serie = "Sandokan"
+        tema = "Baja California noticias"
 
-        print("\n🎬 INICIANDO PIPELINE COMPLETO\n")
+        print("\n📰 INICIANDO PIPELINE\n")
 
         # =====================================================
         # 1️⃣ GOOGLE SCRAPER
         # =====================================================
-        google_scraper = GoogleScraper(serie)
+        google_scraper = GoogleScraper(tema)
         df_links = google_scraper.ejecutar()
 
         print("🔎 URLs encontradas:", len(df_links))
 
+        # =====================================================
+        # 2️⃣ FILTRAR URLs YA PROCESADAS
+        # =====================================================
+        urls_procesadas = cargar_urls_procesadas()
+        df_links = df_links[~df_links["URL"].isin(urls_procesadas)]
+
+        print("🆕 URLs nuevas:", len(df_links))
+
         if df_links.empty:
-            print("❌ No se encontraron URLs")
+            print("✅ No hay URLs nuevas")
             return
 
         # =====================================================
-        # 2️⃣ VERIFICACIÓN CON IA
+        # 3️⃣ IA → FILTRAR POR BAJA CALIFORNIA
         # =====================================================
         ia = IAVerificador()
-        df_verificado = ia.ejecutar(df_links, serie)
+        df_verificado = ia.ejecutar(df_links, tema)
 
         df_verificado = df_verificado[
-            df_verificado["Resultado_Verificacion"] == "RELACIONADO"
+            df_verificado["Resultado_Verificacion"] == "RELACIONADO_BAJA_CALIFORNIA"
         ]
 
-        print("🤖 URLs relacionadas:", len(df_verificado))
+        print("📍 Contenido de Baja California:", len(df_verificado))
 
         if df_verificado.empty:
-            print("❌ Ninguna URL relevante")
+            print("❌ No hay contenido relevante")
             return
 
         # =====================================================
-        # 3️⃣ LIMPIEZA DE PERFILES
+        # 4️⃣ LIMPIAR PERFILES (REDES)
         # =====================================================
         cleaner = ProfileCleaner()
-        df_limpio = asyncio.run(
-            cleaner.ejecutar(df_verificado)
-        )
+        df_limpio = asyncio.run(cleaner.ejecutar(df_verificado))
 
-        print("🧹 Perfiles limpios:", len(df_limpio))
+        print("🧹 Perfiles detectados:", len(df_limpio))
+
+        if df_limpio.empty:
+            print("❌ No hay datos limpios")
+            return
 
         # =====================================================
-        # 4️⃣ GUARDAR RESULTADO FINAL
+        # 5️⃣ GUARDAR SIN DUPLICADOS (EXCEL)
         # =====================================================
-        df_limpio.to_excel("resultado_final.xlsx", index=False)
+        archivo = "medios_baja_california.xlsx"
 
-        print("\n✅ PIPELINE COMPLETO FINALIZADO")
+        if os.path.exists(archivo):
+            df_existente = pd.read_excel(archivo)
+
+            df_total = pd.concat([df_existente, df_limpio])
+            df_total = df_total.drop_duplicates(subset=["URL_Limpia"])
+
+        else:
+            df_total = df_limpio
+
+        df_total.to_excel(archivo, index=False)
+
+        print("💾 Datos guardados en Excel")
+
+        # =====================================================
+        # 6️⃣ GUARDAR URLs PROCESADAS (CLAVE 🔥)
+        # =====================================================
+        guardar_urls_procesadas(df_limpio["URL"].tolist())
+
+        print("🧠 URLs guardadas para evitar reprocesar")
+
+        print("\n✅ PIPELINE FINALIZADO")
+
 
 # =========================================================
 # ENTRY POINT
 # =========================================================
-
 if __name__ == "__main__":
     Main.run()
